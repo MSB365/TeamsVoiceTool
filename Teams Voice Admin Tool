@@ -377,6 +377,7 @@ Start-Sleep -s 3
 write-host "Run this Script once for each number!" -ForegroundColor Gray -BackgroundColor Black
 Start-Sleep -s 5
 ######################################################################
+<#
 # Connecting to Microsoft Teams
 $module = "MicrosoftTeams"
 write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
@@ -398,7 +399,7 @@ Import-Module MicrosoftTeams
 Start-Sleep -s 2
 Connect-MicrosoftTeams
 Start-Sleep -s 2
-
+#>
 
 ######################################################################
 # Set variable 
