@@ -1,5 +1,240 @@
-cls
-#################################################
+#region Description
+<#     
+       .NOTES
+       ==============================================================================
+       Created on:         2022/04/07 
+       Created by:         Drago Petrovic
+       Organization:       MSB365.blog
+       Filename:           TeamsVoice-AdminTool.ps1
+       Current version:    V1.10     
+
+       Find us on:
+             * Website:         https://www.msb365.blog
+             * Technet:         https://social.technet.microsoft.com/Profile/MSB365
+             * LinkedIn:        https://www.linkedin.com/in/drago-petrovic/
+             * MVP Profile:     https://mvp.microsoft.com/de-de/PublicProfile/5003446
+       ==============================================================================
+
+       .DESCRIPTION
+       This script can be executed without prior customisation.
+       This script is used to manage Teams Voice Tasks (bulk) with PowerShell            
+       
+
+       .NOTES
+       It is manditory to have the right Licenses already assigned to your Tenant.
+
+
+
+
+
+       .EXAMPLE
+       .\TeamsVoice-AdminTool.ps1 
+             
+
+       .COPYRIGHT
+       Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+       to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+       and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+       The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+       FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+       WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+       ===========================================================================
+       .CHANGE LOG
+             V1.00, 2022/04/07 - DrPe - Initial version
+             V1.10, 2021/09/13 - DrPe - Added the assing Phonenumber Module
+             
+			 
+
+
+
+
+--- keep it simple, but significant ---
+
+
+--- by MSB365 Blog ---
+
+#>
+#endregion
+
+[cmdletbinding()]
+param(
+[switch]$accepteula,
+[switch]$v)
+
+###############################################################################
+#Script Name variable
+$Scriptname = "Teams Voice Admin Tool"
+###############################################################################
+
+[void][System.Reflection.Assembly]::Load('System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a')
+[void][System.Reflection.Assembly]::Load('System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089')
+
+function ShowEULAPopup($mode)
+{
+    $EULA = New-Object -TypeName System.Windows.Forms.Form
+    $richTextBox1 = New-Object System.Windows.Forms.RichTextBox
+    $btnAcknowledge = New-Object System.Windows.Forms.Button
+    $btnCancel = New-Object System.Windows.Forms.Button
+
+    $EULA.SuspendLayout()
+    $EULA.Name = "MIT"
+    $EULA.Text = "$Scriptname - License Agreement"
+
+    $richTextBox1.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
+    $richTextBox1.Location = New-Object System.Drawing.Point(12,12)
+    $richTextBox1.Name = "richTextBox1"
+    $richTextBox1.ScrollBars = [System.Windows.Forms.RichTextBoxScrollBars]::Vertical
+    $richTextBox1.Size = New-Object System.Drawing.Size(776, 397)
+    $richTextBox1.TabIndex = 0
+    $richTextBox1.ReadOnly=$True
+    $richTextBox1.Add_LinkClicked({Start-Process -FilePath $_.LinkText})
+    $richTextBox1.Rtf = @"
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat{\fonttbl{\f0\fswiss\fprq2\fcharset0 Segoe UI;}{\f1\fnil\fcharset0 Calibri;}{\f2\fnil\fcharset0 Microsoft Sans Serif;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mdispDef1\mwrapIndent1440 }\viewkind4\uc1
+\pard\widctlpar\f0\fs19\lang1033 MSB365 SOFTWARE MIT LICENSE\par
+Copyright (c) 2021 Drago Petrovic\par
+$Scriptname \par
+\par
+{\pict{\*\picprop}\wmetafile8\picw26\pich26\picwgoal32000\pichgoal15
+0100090000035000000000002700000000000400000003010800050000000b0200000000050000
+000c0202000200030000001e000400000007010400040000000701040027000000410b2000cc00
+010001000000000001000100000000002800000001000000010000000100010000000000000000
+000000000000000000000000000000000000000000ffffff00000000ff040000002701ffff0300
+00000000
+}These license terms are an agreement between you and MSB365 (or one of its affiliates). IF YOU COMPLY WITH THESE LICENSE TERMS, YOU HAVE THE RIGHTS BELOW. BY USING THE SOFTWARE, YOU ACCEPT THESE TERMS.\par
+\par
+MIT License\par
+{\pict{\*\picprop}\wmetafile8\picw26\pich26\picwgoal32000\pichgoal15
+0100090000035000000000002700000000000400000003010800050000000b0200000000050000
+000c0202000200030000001e000400000007010400040000000701040027000000410b2000cc00
+010001000000000001000100000000002800000001000000010000000100010000000000000000
+000000000000000000000000000000000000000000ffffff00000000ff040000002701ffff0300
+00000000
+}\par
+\pard
+{\pntext\f0 1.\tab}{\*\pn\pnlvlbody\pnf0\pnindent0\pnstart1\pndec{\pntxta.}}
+\fi-360\li360 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: \par
+\pard\widctlpar\par
+\pard\widctlpar\li360 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\par
+\par
+\pard\widctlpar\fi-360\li360 2.\tab THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. \par
+\pard\widctlpar\par
+\pard\widctlpar\fi-360\li360 3.\tab IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. \par
+\pard\widctlpar\par
+\pard\widctlpar\fi-360\li360 4.\tab DISCLAIMER OF WARRANTY. THE SOFTWARE IS PROVIDED \ldblquote AS IS,\rdblquote  WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL MSB365 OR ITS LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\par
+\pard\widctlpar\par
+\pard\widctlpar\fi-360\li360\qj 5.\tab LIMITATION ON AND EXCLUSION OF DAMAGES. IF YOU HAVE ANY BASIS FOR RECOVERING DAMAGES DESPITE THE PRECEDING DISCLAIMER OF WARRANTY, YOU CAN RECOVER FROM MICROSOFT AND ITS SUPPLIERS ONLY DIRECT DAMAGES UP TO U.S. $1.00. YOU CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST PROFITS, SPECIAL, INDIRECT, OR INCIDENTAL DAMAGES. This limitation applies to (i) anything related to the Software, services, content (including code) on third party Internet sites, or third party applications; and (ii) claims for breach of contract, warranty, guarantee, or condition; strict liability, negligence, or other tort; or any other claim; in each case to the extent permitted by applicable law. It also applies even if MSB365 knew or should have known about the possibility of the damages. The above limitation or exclusion may not apply to you because your state, province, or country may not allow the exclusion or limitation of incidental, consequential, or other damages.\par
+\pard\widctlpar\par
+\pard\widctlpar\fi-360\li360\qj 6.\tab ENTIRE AGREEMENT. This agreement, and any other terms MSB365 may provide for supplements, updates, or third-party applications, is the entire agreement for the software.\par
+\pard\widctlpar\qj\par
+\pard\widctlpar\fi-360\li360\qj 7.\tab A complete script documentation can be found on the website https://www.msb365.blog.\par
+\pard\widctlpar\par
+\pard\sa200\sl276\slmult1\f1\fs22\lang9\par
+\pard\f2\fs17\lang2057\par
+}
+"@
+    $richTextBox1.BackColor = [System.Drawing.Color]::White
+    $btnAcknowledge.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
+    $btnAcknowledge.Location = New-Object System.Drawing.Point(544, 415)
+    $btnAcknowledge.Name = "btnAcknowledge";
+    $btnAcknowledge.Size = New-Object System.Drawing.Size(119, 23)
+    $btnAcknowledge.TabIndex = 1
+    $btnAcknowledge.Text = "Accept"
+    $btnAcknowledge.UseVisualStyleBackColor = $True
+    $btnAcknowledge.Add_Click({$EULA.DialogResult=[System.Windows.Forms.DialogResult]::Yes})
+
+    $btnCancel.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
+    $btnCancel.Location = New-Object System.Drawing.Point(669, 415)
+    $btnCancel.Name = "btnCancel"
+    $btnCancel.Size = New-Object System.Drawing.Size(119, 23)
+    $btnCancel.TabIndex = 2
+    if($mode -ne 0)
+    {
+   $btnCancel.Text = "Close"
+    }
+    else
+    {
+   $btnCancel.Text = "Decline"
+    }
+    $btnCancel.UseVisualStyleBackColor = $True
+    $btnCancel.Add_Click({$EULA.DialogResult=[System.Windows.Forms.DialogResult]::No})
+
+    $EULA.AutoScaleDimensions = New-Object System.Drawing.SizeF(6.0, 13.0)
+    $EULA.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Font
+    $EULA.ClientSize = New-Object System.Drawing.Size(800, 450)
+    $EULA.Controls.Add($btnCancel)
+    $EULA.Controls.Add($richTextBox1)
+    if($mode -ne 0)
+    {
+   $EULA.AcceptButton=$btnCancel
+    }
+    else
+    {
+        $EULA.Controls.Add($btnAcknowledge)
+   $EULA.AcceptButton=$btnAcknowledge
+        $EULA.CancelButton=$btnCancel
+    }
+    $EULA.ResumeLayout($false)
+    $EULA.Size = New-Object System.Drawing.Size(800, 650)
+
+    Return ($EULA.ShowDialog())
+}
+
+function ShowEULAIfNeeded($toolName, $mode)
+{
+$eulaRegPath = "HKCU:Software\Microsoft\CESDiagnosticTools"
+$eulaAccepted = "No"
+$eulaValue = $toolName + " EULA Accepted"
+if(Test-Path $eulaRegPath)
+{
+$eulaRegKey = Get-Item $eulaRegPath
+$eulaAccepted = $eulaRegKey.GetValue($eulaValue, "No")
+}
+else
+{
+$eulaRegKey = New-Item $eulaRegPath
+}
+if($mode -eq 2) # silent accept
+{
+$eulaAccepted = "Yes"
+        $ignore = New-ItemProperty -Path $eulaRegPath -Name $eulaValue -Value $eulaAccepted -PropertyType String -Force
+}
+else
+{
+if($eulaAccepted -eq "No")
+{
+$eulaAccepted = ShowEULAPopup($mode)
+if($eulaAccepted -eq [System.Windows.Forms.DialogResult]::Yes)
+{
+        $eulaAccepted = "Yes"
+        $ignore = New-ItemProperty -Path $eulaRegPath -Name $eulaValue -Value $eulaAccepted -PropertyType String -Force
+}
+}
+}
+return $eulaAccepted
+}
+
+if ($accepteula)
+    {
+         ShowEULAIfNeeded "DS Authentication Scripts:" 2
+         "EULA Accepted"
+    }
+else
+    {
+        $eulaAccepted = ShowEULAIfNeeded "DS Authentication Scripts:" 0
+        if($eulaAccepted -ne "Yes")
+            {
+                "EULA Declined"
+                exit
+            }
+         "EULA Accepted"
+    }
+###############################################################################
+
 
 
 write-host " __  __ _                           __ _     _______                        __      __   _           " -ForegroundColor Magenta
@@ -115,7 +350,7 @@ start-sleep -s 3
 write-host "Setting the Phone numbers..." -ForegroundColor cyan 
 foreach($user in $users)
 {
-#Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid
+Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid
 Write-Host "Phone numbers for the users $($user.DisplayName) set!" -ForegroundColor Green
 Start-Sleep -s 2
 }
@@ -129,7 +364,296 @@ Start-Sleep -s 5
 Get-CsOnlineUser | ft UserPrincipalName, LineURI
 pause
          } '2' {
-             write-host "2" -ForegroundColor Magenta
+             #ApplicationID - Information
+
+#Auto Attendant: ce933385-9390-45d1-9512-c8d228074e07
+
+#Call Queue: 11cd3e2e-fccb-42ad-ad00-878b93575e07
+
+######################################################################
+write-host "PowerShell Script to create Ressource Account, Auto attendatns and Call Queue for" -ForegroundColor Gray -BackgroundColor Black
+write-host "shared phone numbers." -ForegroundColor Gray -BackgroundColor Black
+Start-Sleep -s 3
+write-host "Run this Script once for each number!" -ForegroundColor Gray -BackgroundColor Black
+Start-Sleep -s 5
+######################################################################
+# Connecting to Microsoft Teams
+$module = "MicrosoftTeams"
+write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
+write-host " - Please enter the credentials..." -ForegroundColor Yellow 
+Start-Sleep -s 5
+if (Get-Module -ListAvailable -Name MicrosoftTeams) {
+    Write-Host "$module Module Already Installed" -ForegroundColor Green
+    Start-Sleep -s 2
+    Write-Host "Connecting $module" -ForegroundColor Cyan
+} 
+else {
+    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
+        Install-Module -Name MicrosoftTeams -AllowClobber -Force
+    Write-Host "$module Module Installed" -ForegroundColor Green
+    Start-Sleep -s 2
+    Write-Host "Connecting $module" -ForegroundColor Cyan
+}
+Import-Module MicrosoftTeams
+Start-Sleep -s 2
+Connect-MicrosoftTeams
+Start-Sleep -s 2
+
+
+######################################################################
+# Set variable 
+Write-Host "Please enter the upcomming variables..." -ForegroundColor Cyan
+Start-Sleep -s 5
+$domain1 =  $(Write-Host "Please enter your domain name. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "contoso.com" -ForegroundColor Yellow -NoNewline; Read-Host """")
+$flow1 =  $(Write-Host "Please Choose a name for your first call flow. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "MainNumber" -ForegroundColor Yellow -NoNewline; Read-Host """")
+$Number1 =  $(Write-Host "Please enter a valid free phone number. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "+41001112233" -ForegroundColor Yellow -NoNewline; Read-Host """")
+Start-Sleep -s 2
+$CC1 = "CallQueue_$($flow1)@$($domain1)"
+$AT1 = "Autoattendant_$($flow1)@$($domain1)"
+$CC2 = "CallQueue_$($flow1)"
+$AT2 = "Autoattendant_$($flow1)"
+Start-Sleep -s 2
+$CC01 = $CC1
+$AT01 = $AT1
+$CC02 = $CC2
+$AT02 = $AT2
+Write-Host "Done! Thank you..." -ForegroundColor Green
+
+
+######################################################################
+# creating resource accounts 
+write-host "creating resource accounts..." -ForegroundColor Cyan
+Start-Sleep -s 2
+Write-Host "Creating CallQueue RA..." -ForegroundColor Cyan
+New-CsOnlineApplicationInstance -UserPrincipalName $CC1 -DisplayName $CC2 -ApplicationId "11cd3e2e-fccb-42ad-ad00-878b93575e07"
+Start-Sleep -s 2
+Write-Host "Creatig AutoAttendant RA..." -ForegroundColor Cyan
+New-CsOnlineApplicationInstance -UserPrincipalName $AT1 -DisplayName $AT2 -ApplicationId "ce933385-9390-45d1-9512-c8d228074e07"
+Start-Sleep -s 10
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################
+# Connecting to Azure Active Directory
+$module = "AzureAD"
+write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
+write-host " - Please enter the credentials..." -ForegroundColor Yellow 
+Start-Sleep -s 5
+if (Get-Module -ListAvailable -Name AzureAD) {
+    Write-Host "$module Module Already Installed" -ForegroundColor Green
+    Start-Sleep -s 2
+    Write-Host "Connecting $module" -ForegroundColor Cyan
+} 
+else {
+    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
+        Install-Module -Name AzureAD -AllowClobber -Force
+    Write-Host "$module Module Installed" -ForegroundColor Green
+    Start-Sleep -s 2
+    Write-Host "Connecting $module" -ForegroundColor Cyan
+}
+Import-Module AzureAD
+Connect-AzureAD
+Start-Sleep -s 2
+
+
+######################################################################
+# Assigning license to call queue and auto attendant
+Write-Host "Assigning Teams phone system (Virtual User) license..." -ForegroundColor Cyan
+Start-Sleep -s 2
+Write-Host "Grabbing $CC1..." -ForegroundColor Cyan
+$User = Get-AzureADUser -ObjectId $CC1 
+$User | Set-AzureADUser -UsageLocation "CH"
+Start-Sleep -s 2
+Write-Host "Assigning license for $CC1" -ForegroundColor Cyan
+$User = Get-AzureADUser -ObjectId $CC1 
+$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense ####################################
+$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
+$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
+$LicensesToAssign.AddLicenses = $License
+Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
+Start-Sleep -s 2
+$User = Get-AzureADUser -ObjectId $AT1
+$User | Set-AzureADUser -UsageLocation "CH"
+Start-Sleep -s 2
+$User = Get-AzureADUser -ObjectId $AT1
+$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense
+$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
+$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
+$LicensesToAssign.AddLicenses = $License
+Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
+Start-Sleep -s 15
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################*****
+# assign phone number to the resource account
+Start-Sleep -s 4
+Write-Host "Assigning phone number to the resource account..." -ForegroundColor Cyan
+Start-Sleep -s 15
+#Set-CsOnlineApplicationInstance -Identity $AT1 -OnpremPhoneNumber $Number1 #"tel:$($Number1)" ###### TEST ######
+Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1 
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################
+# create call queue
+$UserVarId = Get-CsOnlineApplicationInstance -Identity $AT1 | Select-Object -ExpandProperty ObjectID
+Start-Sleep -s 4
+Write-Host "Creating call queue... $CC2" -ForegroundColor Cyan
+New-CsCallQueue -Name $CC2 -LanguageId "de-DE" -UseDefaultMusicOnHold $true -RoutingMethod Attendant -Users @($UserVarId) -AllowOptOut $true -AgentAlertTime 30 -OverflowThreshold 50 -OverflowAction DisconnectWithBusy -TimeoutThreshold 1200 -TimeoutAction Disconnect
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+Start-Sleep -s 10
+
+
+######################################################################
+#Assign ResourceAccount to Callqueue
+#get application id and call queue id
+Write-Host "Assigning Resource Account to Callqueue" -ForegroundColor Cyan
+$applicationInstanceId = (Get-CsOnlineUser $CC1)[-1].Identity
+$callQueueId = (Get-CsCallQueue -NameFilter $CC2).Identity
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+#make the connection
+Write-Host "Creating the connection..." -ForegroundColor Cyan
+New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $callQueueId -ConfigurationType CallQueue
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################
+#Default Call Flow
+Write-Host "Building the call flow..." -ForegroundColor Cyan
+Start-Sleep -s 4
+$callableEntityId = (Find-CsOnlineApplicationInstance -SearchQuery $CC2) | Select-Object -Property Id
+$CallTarget= New-CsAutoAttendantCallableEntity -Identity $callableEntityId.id -Type ApplicationEndpoint
+$menuOption = New-CsAutoAttendantMenuOption -Action TransferCallToTarget -DtmfResponse Automatic -CallTarget $CallTarget
+Start-Sleep -s 2
+$AAMenu = New-CsAutoAttendantMenu -Name "Default Menu" -MenuOptions @($menuOption) -DirectorySearchMethod None
+Start-Sleep -s 2
+#$WelcomePrompt = New-CsAutoAttendantPrompt -AudioFilePrompt $GreetingAudioFile
+$DefaultCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 Default call flow" -Menu $AAMenu # -Greetings @($WelcomePrompt)
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################
+#After Hours Call Flow
+#TimeRange
+Write-Host "Setting up time range for After hours call flow" -ForegroundColor Cyan
+Start-Sleep -s 4
+
+$OT1 =  $(Write-Host "Please enter opening hour in the morning. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "08:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+$OT2 =  $(Write-Host "Please enter closing hour at noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "12:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+$OT3 =  $(Write-Host "Please enter opening hour after noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "13:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+$OT4 =  $(Write-Host "Please enter closing hour in the evening. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "17:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+write-host "Thank you!" -ForegroundColor Green -BackgroundColor black
+Start-Sleep -s 2
+$trMorning = New-CsOnlineTimeRange -Start $OT1 -End $OT2
+$trAfternoon = New-CsOnlineTimeRange -Start $OT3 -End $OT4
+Start-Sleep -s 2
+Write-Host "After hours time range is set... " -ForegroundColor Green
+Start-Sleep -s 5
+
+######################################################################
+#Business Hours
+Write-Host "Finding and setting time ranges for business hours..." -ForegroundColor Cyan
+Start-Sleep -s 2
+$AfterHoursShedule = New-CsOnlineSchedule -Name "BusinessHours" -WeeklyRecurrentSchedule -MondayHours @($trMorning,$trAfternoon) -TuesdayHours @($trMorning,$trAfternoon) -WednesdayHours @($trMorning,$trAfternoon) -ThursdayHours @($trMorning,$trAfternoon) -FridayHours @($trMorning,$trAfternoon) -Complement
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+######################################################################
+#Rechecking if phone number is set
+Start-Sleep -s 3
+Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
+Write-Host "Rechecking if $AT1 got the $Number1 phone number..." -ForegroundColor Yellow -BackgroundColor black
+Start-Sleep -s 3
+if (Get-CsOnlineApplicationInstance -Identity $AT1 | Where-Object {$_.phonenumber -eq $null}) {
+    Start-Sleep -s 2
+    write-host "Phone number was not set!" -ForegroundColor Yellow -BackgroundColor Black
+    Start-Sleep -s 5
+    write-host "Setting up phone number" -ForegroundColor Yellow -BackgroundColor Black
+    Start-Sleep -s 2
+    Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1
+    Start-Sleep -s 2
+}
+else {
+Write-Host "Number OK!" -ForegroundColor Green -BackgroundColor Black
+Start-Sleep -s 2
+}
+Write-Host "Number is set!" -ForegroundColor Green -BackgroundColor Black
+Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
+Start-Sleep -s 4
+
+
+######################################################################
+#Menu (AfterHoursCall Flow)
+Write-Host "Setting up business- and after hours to Auto attendant: $AT2..." -ForegroundColor Cyan
+Start-Sleep -s 2
+$menuOption = New-CsAutoAttendantMenuOption -Action DisconnectCall -DtmfResponse Automatic
+$afterHoursMenu = New-CsAutoAttendantMenu -Name "After Hours Call Flow" -MenuOptions @($menuOption) -DirectorySearchMethod None
+$afterHoursCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 After hours call flow" -Menu $afterHoursMenu -Greetings @($OOFPrompt)
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+ 
+######################################################################
+#CallHandlingAssociation
+Write-Host "Configuring Call Handling Association..." -ForegroundColor Cyan
+Start-Sleep -s 2
+$AfterHoursSheduleCallHandlingAssociation = New-CsAutoAttendantCallHandlingAssociation -Type AfterHours -ScheduleId $AfterHoursShedule.Id -CallFlowId $afterHoursCallFlow.Id
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+<######################################################################
+#TimeZone
+Write-Host "Listing available TimeZones..." -ForegroundColor Cyan
+Start-Sleep -s 2
+Get-CsAutoAttendantSupportedTimeZone
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################>
+#Auto Attendant
+Write-Host "Setting the W. Europe Standard Time time Zone..." -ForegroundColor Cyan
+Start-Sleep -s 2
+$aaName = $AT2
+$language = "de-DE"
+$TimeZone = "W. Europe Standard Time"
+$CallQueueId = (Get-CsOnlineUser -Identity $CC1).ObjectId
+
+New-CsAutoAttendant -Name $aaName -LanguageId $language -CallFlows @($afterHoursCallFlow) -TimeZoneId $TimeZone -DefaultCallFlow $DefaultCallFlow -CallHandlingAssociations @($AfterHoursSheduleCallHandlingAssociation)
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+
+
+######################################################################
+#Assign ResourceAccount to AutoAttendant
+#get application id and call queue id
+Write-Host "Assign ResourceAccount to AutoAttendant..." -ForegroundColor Cyan
+Start-Sleep -s 2
+$applicationInstanceId = (Get-CsOnlineUser $AT1)[-1].Identity
+$AutoAttendantID = (Get-CsAutoAttendant -NameFilter $AT2).Identity
+
+New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $AutoAttendantID -ConfigurationType AutoAttendant
+Start-Sleep -s 2
+Write-Host "Done!" -ForegroundColor Green
+Start-Sleep -s 2
+Write-Host "Configuration is Done!" -ForegroundColor black -BackgroundColor Green
+
+
+######################################################################
+# Show Auto Attendant
+Start-Sleep -s 5
+Write-Host "Showing created Auto Attendant.." -ForegroundColor Magenta
+Start-Sleep -s 2
+Get-CsAutoAttendant
+pause
          } '3' {
              write-host "3" -ForegroundColor Magenta
          }
