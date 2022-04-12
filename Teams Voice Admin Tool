@@ -67,6 +67,7 @@ param(
 ###############################################################################
 #Script Name variable
 $Scriptname = "Teams Voice Admin Tool"
+$RKEY = "MSB365_Teams_Voice_Admin_Tool"
 ###############################################################################
 
 [void][System.Reflection.Assembly]::Load('System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a')
@@ -186,7 +187,7 @@ MIT License\par
 
 function ShowEULAIfNeeded($toolName, $mode)
 {
-$eulaRegPath = "HKCU:Software\Microsoft\CESDiagnosticTools"
+$eulaRegPath = "HKCU:Software\Microsoft\$RKEY"
 $eulaAccepted = "No"
 $eulaValue = $toolName + " EULA Accepted"
 if(Test-Path $eulaRegPath)
@@ -308,418 +309,466 @@ do
      {
          '1' {
              # Get Location ID
-write-host "Gettering Tenant location ID..." -ForegroundColor Cyan
-start-sleep -s 2
-$Lid = Get-CsOnlineLisLocation | Sort-Object LocationID | select-object -ExpandProperty LocationID
-write-host "Tenant LocationID is: $Lid" -ForegroundColor White -BackgroundColor Black
-Start-Sleep -s 2
+			write-host "Gettering Tenant location ID..." -ForegroundColor Cyan
+			start-sleep -s 2
+			$Lid = Get-CsOnlineLisLocation | Sort-Object LocationID | select-object -ExpandProperty LocationID
+			write-host "Tenant LocationID is: $Lid" -ForegroundColor White -BackgroundColor Black
+			Start-Sleep -s 2
 
-# Getting CSV Information
-write-host "Please select and import the CSV File from your device:" -ForegroundColor Cyan
-Write-Host ""
-Write-Host ""
-Start-Sleep -s 4
-Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
-Write-Host "NOTE!" -ForegroundColor Yellow -BackgroundColor Black
-Write-Host "The following information are needed in the CSV file:" -ForegroundColor White -BackgroundColor black
-Write-Host 'UserPrincipalName,"DisplayName","TelephoneNumber"' -ForegroundColor Gray -BackgroundColor Black
-Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
-Start-Sleep -s 6
-$File = New-Object System.Windows.Forms.OpenFileDialog -Property @{
-    InitialDirectory = [Environment]::GetFolderPath(‘Desktop’)
-}
-$null = $File.ShowDialog()
-$FilePath = $File.FileName
-$users = Import-Csv $FilePath
-Start-Sleep -s 3
-Write-Host "The following data is imported from CSV:" -ForegroundColor Cyan
-Write-Output $users
-Start-Sleep -s 3
-$selection = Read-Host "Are the Data correct? - Choose between [Y] and [N]"
-     switch ($selection)
-     {
-         'y' {
-             
-         } 'n' {
-             $File = New-Object System.Windows.Forms.OpenFileDialog -Property @{
-    InitialDirectory = [Environment]::GetFolderPath(‘Desktop’)
-}
-$null = $File.ShowDialog()
-$FilePath = $File.FileName
-$users = Import-Csv $FilePath
-Start-Sleep -s 3
-Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
-Write-Host "The following data is imported from CSV:" -ForegroundColor Cyan
-Write-Output $users
-Start-Sleep -s 3
-         } 
-     }
+			# Getting CSV Information
+			write-host "Please select and import the CSV File from your device:" -ForegroundColor Cyan
+			Write-Host ""
+			Write-Host ""
+			Start-Sleep -s 4
+			Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
+			Write-Host "NOTE!" -ForegroundColor Yellow -BackgroundColor Black
+			Write-Host "The following information are needed in the CSV file:" -ForegroundColor White -BackgroundColor black
+			Write-Host 'UserPrincipalName,"DisplayName","TelephoneNumber"' -ForegroundColor Gray -BackgroundColor Black
+			Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
+			Start-Sleep -s 6
+			$File = New-Object System.Windows.Forms.OpenFileDialog
+			$null = $File.ShowDialog()
+			$FilePath = $File.FileName
+			$users = Import-Csv $FilePath
+			Start-Sleep -s 3
+			Write-Host "The following data is imported from CSV:" -ForegroundColor Cyan
+			$users | ft
+			Start-Sleep -s 3
+			do
+			{
+				$selection = Read-Host "Are the data correct? - Choose between [Y] and [N]"
+				switch ($selection)
+				{
+					'y' {
+						
+					} 'n' {
+						$File = New-Object System.Windows.Forms.OpenFileDialog
+						$null = $File.ShowDialog()
+						$FilePath = $File.FileName
+						$users = Import-Csv $FilePath
+						Start-Sleep -s 3
+						Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
+						Write-Host "The following data is imported from CSV:" -ForegroundColor Cyan
+						$users | ft
+						Start-Sleep -s 3
+					}
+				}
+			}
+			until ($selection -eq "y")
+			
 
-start-sleep -s 3
+			start-sleep -s 3
 
-# Configuring Phone Number for Teams users
-write-host "Setting the Phone numbers..." -ForegroundColor cyan 
-foreach($user in $users)
-{
-Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid ###
-Write-Host "Phone numbers for the users $($user.DisplayName) set!" -ForegroundColor Green
-Start-Sleep -s 2
-}
-start-sleep -s 3
-Write-Host "All phone numbers set!" -ForegroundColor Green -BackgroundColor Black
-Start-Sleep -s 5
+			# Configuring Phone Number for Teams users
+			write-host "Setting the Phone numbers..." -ForegroundColor cyan 
+			foreach($user in $users)
+			{
+				try
+				{
+					Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid -ErrorAction Stop ###
+					Write-Host "Phone numbers for the users $($user.DisplayName) set!" -ForegroundColor Green
+					Start-Sleep -s 2
+				}
+				catch
+				{
+					Write-Host "Could not set phone number for user $($user.UserPrincipalName) " + $_.Exception -ForegroundColor Red 
+				}
+				
+			}
+			start-sleep -s 3
+			Write-Host "All phone numbers set!" -ForegroundColor Green -BackgroundColor Black
+			Start-Sleep -s 5
 
-# Get updated overview
-Write-Host "Preparing all showing updated Userlist..." -ForegroundColor Cyan
-Start-Sleep -s 5
-Get-CsOnlineUser | ft UserPrincipalName, LineURI
-pause
+			# Get updated overview
+			Write-Host "Preparing showing all updated user list..." -ForegroundColor Cyan
+			Start-Sleep -s 5
+			Get-CsOnlineUser | ft UserPrincipalName, LineURI
+			pause
          } '2' {
              #ApplicationID - Information
 
-#Auto Attendant: ce933385-9390-45d1-9512-c8d228074e07
+			#Auto Attendant: ce933385-9390-45d1-9512-c8d228074e07
 
-#Call Queue: 11cd3e2e-fccb-42ad-ad00-878b93575e07
+			#Call Queue: 11cd3e2e-fccb-42ad-ad00-878b93575e07
 
-######################################################################
-write-host "PowerShell Script to create Ressource Account, Auto attendatns and Call Queue for" -ForegroundColor Gray -BackgroundColor Black
-write-host "shared phone numbers." -ForegroundColor Gray -BackgroundColor Black
-Start-Sleep -s 3
-write-host "Run this Script once for each number!" -ForegroundColor Gray -BackgroundColor Black
-Start-Sleep -s 5
-######################################################################
-# Connecting to Microsoft Teams
-<#
-$module = "MicrosoftTeams"
-write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
-write-host " - Please enter the credentials..." -ForegroundColor Yellow 
-Start-Sleep -s 5
-if (Get-Module -ListAvailable -Name MicrosoftTeams) {
-    Write-Host "$module Module Already Installed" -ForegroundColor Green
-    Start-Sleep -s 2
-    Write-Host "Connecting $module" -ForegroundColor Cyan
-} 
-else {
-    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
-        Install-Module -Name MicrosoftTeams -AllowClobber -Force
-    Write-Host "$module Module Installed" -ForegroundColor Green
-    Start-Sleep -s 2
-    Write-Host "Connecting $module" -ForegroundColor Cyan
-}
-Import-Module MicrosoftTeams
-Start-Sleep -s 2
-Connect-MicrosoftTeams
-Start-Sleep -s 2
-#>
+			######################################################################
+			write-host "PowerShell Script to create Ressource Account, Auto attendatns and Call Queue for" -ForegroundColor Gray -BackgroundColor Black
+			write-host "shared phone numbers." -ForegroundColor Gray -BackgroundColor Black
+			Start-Sleep -s 3
+			write-host "Run this Script once for each number!" -ForegroundColor Gray -BackgroundColor Black
+			Start-Sleep -s 5
+			######################################################################
+			# Connecting to Microsoft Teams
+			<#
+			$module = "MicrosoftTeams"
+			write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
+			write-host " - Please enter the credentials..." -ForegroundColor Yellow 
+			Start-Sleep -s 5
+			if (Get-Module -ListAvailable -Name MicrosoftTeams) {
+			    Write-Host "$module Module Already Installed" -ForegroundColor Green
+			    Start-Sleep -s 2
+			    Write-Host "Connecting $module" -ForegroundColor Cyan
+			} 
+			else {
+			    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
+			        Install-Module -Name MicrosoftTeams -AllowClobber -Force
+			    Write-Host "$module Module Installed" -ForegroundColor Green
+			    Start-Sleep -s 2
+			    Write-Host "Connecting $module" -ForegroundColor Cyan
+			}
+			Import-Module MicrosoftTeams
+			Start-Sleep -s 2
+			Connect-MicrosoftTeams
+			Start-Sleep -s 2
+			#>
 
-######################################################################
-# Set variable 
-Write-Host "Please enter the upcomming variables..." -ForegroundColor Cyan
-Start-Sleep -s 5
-$domain1 =  $(Write-Host "Please enter your domain name. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "contoso.com" -ForegroundColor Yellow -NoNewline; Read-Host """")
-$flow1 =  $(Write-Host "Please Choose a name for your first call flow. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "MainNumber" -ForegroundColor Yellow -NoNewline; Read-Host """")
-$Number1 =  $(Write-Host "Please enter a valid free phone number. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "+41001112233" -ForegroundColor Yellow -NoNewline; Read-Host """")
-Start-Sleep -s 2
-$CC1 = "CallQueue_$($flow1)@$($domain1)"
-$AT1 = "Autoattendant_$($flow1)@$($domain1)"
-$CC2 = "CallQueue_$($flow1)"
-$AT2 = "Autoattendant_$($flow1)"
-Start-Sleep -s 2
-$CC01 = $CC1
-$AT01 = $AT1
-$CC02 = $CC2
-$AT02 = $AT2
-Write-Host "Done! Thank you..." -ForegroundColor Green
-
-
-######################################################################
-# creating resource accounts 
-write-host "creating resource accounts..." -ForegroundColor Cyan
-Start-Sleep -s 2
-Write-Host "Creating CallQueue RA..." -ForegroundColor Cyan
-New-CsOnlineApplicationInstance -UserPrincipalName $CC1 -DisplayName $CC2 -ApplicationId "11cd3e2e-fccb-42ad-ad00-878b93575e07"
-Start-Sleep -s 2
-Write-Host "Creatig AutoAttendant RA..." -ForegroundColor Cyan
-New-CsOnlineApplicationInstance -UserPrincipalName $AT1 -DisplayName $AT2 -ApplicationId "ce933385-9390-45d1-9512-c8d228074e07"
-Start-Sleep -s 10
-Write-Host "Done!" -ForegroundColor Green
-
-
-######################################################################
-# Connecting to Azure Active Directory
-$module = "AzureAD"
-write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
-write-host " - Please enter the credentials..." -ForegroundColor Yellow 
-Start-Sleep -s 5
-if (Get-Module -ListAvailable -Name AzureAD) {
-    Write-Host "$module Module Already Installed" -ForegroundColor Green
-    Start-Sleep -s 2
-    Write-Host "Connecting $module" -ForegroundColor Cyan
-} 
-else {
-    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
-        Install-Module -Name AzureAD -AllowClobber -Force
-    Write-Host "$module Module Installed" -ForegroundColor Green
-    Start-Sleep -s 2
-    Write-Host "Connecting $module" -ForegroundColor Cyan
-}
-Import-Module AzureAD
-Connect-AzureAD
-Start-Sleep -s 2
+			######################################################################
+			# Set variable 
+			Write-Host "Please enter the upcomming variables..." -ForegroundColor Cyan
+			Start-Sleep -s 5
+			do
+			{
+				$domain1 = $(Write-Host "Please enter your domain name. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) + $(Write-Host "contoso.com" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			}until ($domain1 -ne "")
+			
+			do
+			{
+				$flow1 = $(Write-Host "Please Choose a name for your first call flow. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) + $(Write-Host "MainNumber" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			}until ($flow1 -ne "")
+			
+			do
+			{
+				$Number1 = $(Write-Host "Please enter a valid free phone number. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) + $(Write-Host "+41001112233" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			}until ($Number1 -ne "")
+					
+			
+			Start-Sleep -s 2
+			$CC1 = "CallQueue_$($flow1)@$($domain1)"
+			$AT1 = "Autoattendant_$($flow1)@$($domain1)"
+			$CC2 = "CallQueue_$($flow1)"
+			$AT2 = "Autoattendant_$($flow1)"
+			Start-Sleep -s 2
+			$CC01 = $CC1
+			$AT01 = $AT1
+			$CC02 = $CC2
+			$AT02 = $AT2
+			Write-Host "Done! Thank you..." -ForegroundColor Green
 
 
-######################################################################
-# Assigning license to call queue and auto attendant
-Write-Host "Assigning Teams phone system (Virtual User) license..." -ForegroundColor Cyan
-Start-Sleep -s 2
-Write-Host "Grabbing $CC1..." -ForegroundColor Cyan
-$User = Get-AzureADUser -ObjectId $CC1 
-$User | Set-AzureADUser -UsageLocation "CH"
-Start-Sleep -s 2
-Write-Host "Assigning license for $CC1" -ForegroundColor Cyan
-$User = Get-AzureADUser -ObjectId $CC1 
-$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense ####################################
-$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
-$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
-$LicensesToAssign.AddLicenses = $License
-Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
-Start-Sleep -s 2
-$User = Get-AzureADUser -ObjectId $AT1
-$User | Set-AzureADUser -UsageLocation "CH"
-Start-Sleep -s 2
-$User = Get-AzureADUser -ObjectId $AT1
-$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense
-$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
-$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
-$LicensesToAssign.AddLicenses = $License
-Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
-Start-Sleep -s 15
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################
+			# creating resource accounts 
+			write-host "creating resource accounts..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$RAerrors = 0
+			try
+			{
+				Write-Host "Creating CallQueue RA..." -ForegroundColor Cyan
+				New-CsOnlineApplicationInstance -UserPrincipalName $CC1 -DisplayName $CC2 -ApplicationId "11cd3e2e-fccb-42ad-ad00-878b93575e07" -ErrorAction Stop
+				Start-Sleep -s 2
+			}
+			catch
+			{
+				Write-Host "Could not create call queue for $CC1 " + $_.Exception -ForegroundColor Red
+				$RAerrors++
+			}
+			
+			try
+			{
+				Write-Host "Creatig AutoAttendant RA..." -ForegroundColor Cyan
+				New-CsOnlineApplicationInstance -UserPrincipalName $AT1 -DisplayName $AT2 -ApplicationId "ce933385-9390-45d1-9512-c8d228074e07" -ErrorAction Stop
+				Start-Sleep -s 10
+			}
+			catch
+			{
+				Write-Host "Could not create AutoAttendant for $AT1 " + $_.Exception -ForegroundColor Red
+				$RAerrors++
+			}
+			If ($RAerrors = 0)
+			{
+				Write-Host "Done!" -ForegroundColor Green
+			}
+			Else
+			{
+				Write-Host "Done with errors" -ForegroundColor Yellow
+			}
+			
 
 
-######################################################################*****
-# assign phone number to the resource account
-Start-Sleep -s 4
-Write-Host "Assigning phone number to the resource account..." -ForegroundColor Cyan
-Start-Sleep -s 15
-#Set-CsOnlineApplicationInstance -Identity $AT1 -OnpremPhoneNumber $Number1 #"tel:$($Number1)" ###### TEST ######
-Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1 
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################
+			# Connecting to Azure Active Directory
+			$module = "AzureAD"
+			write-host "Connectig to $module" -ForegroundColor Magenta -NoNewline
+			write-host " - Please enter the credentials..." -ForegroundColor Yellow 
+			Start-Sleep -s 5
+			if (Get-Module -ListAvailable -Name AzureAD) {
+			    Write-Host "$module Module Already Installed" -ForegroundColor Green
+			    Start-Sleep -s 2
+			    Write-Host "Connecting $module" -ForegroundColor Cyan
+			} 
+			else {
+			    Write-Host "$module Module Not Installed. Installing........." -ForegroundColor Red
+			        Install-Module -Name AzureAD -AllowClobber -Force
+			    Write-Host "$module Module Installed" -ForegroundColor Green
+			    Start-Sleep -s 2
+			    Write-Host "Connecting $module" -ForegroundColor Cyan
+			}
+			Import-Module AzureAD
+			Connect-AzureAD
+			Start-Sleep -s 2
 
 
-######################################################################
-# create call queue
-$UserVarId = Get-CsOnlineApplicationInstance -Identity $AT1 | Select-Object -ExpandProperty ObjectID
-Start-Sleep -s 4
-Write-Host "Creating call queue... $CC2" -ForegroundColor Cyan
-New-CsCallQueue -Name $CC2 -LanguageId "de-DE" -UseDefaultMusicOnHold $true -RoutingMethod Attendant -Users @($UserVarId) -AllowOptOut $true -AgentAlertTime 30 -OverflowThreshold 50 -OverflowAction DisconnectWithBusy -TimeoutThreshold 1200 -TimeoutAction Disconnect
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-Start-Sleep -s 10
+			######################################################################
+			# Assigning license to call queue and auto attendant
+			Write-Host "Assigning Teams phone system (Virtual User) license..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			Write-Host "Grabbing $CC1..." -ForegroundColor Cyan
+			$User = Get-AzureADUser -ObjectId $CC1 
+			$User | Set-AzureADUser -UsageLocation "CH"
+			Start-Sleep -s 2
+			Write-Host "Assigning license for $CC1" -ForegroundColor Cyan
+			$User = Get-AzureADUser -ObjectId $CC1 
+			$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense ####################################
+			$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
+			$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
+			$LicensesToAssign.AddLicenses = $License
+			Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
+			Start-Sleep -s 2
+			$User = Get-AzureADUser -ObjectId $AT1
+			$User | Set-AzureADUser -UsageLocation "CH"
+			Start-Sleep -s 2
+			$User = Get-AzureADUser -ObjectId $AT1
+			$License = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicense
+			$License.SkuId = "440eaaa8-b3e0-484b-a8be-62870b9ba70a"
+			$LicensesToAssign = New-Object -TypeName Microsoft.Open.AzureAD.Model.AssignedLicenses
+			$LicensesToAssign.AddLicenses = $License
+			Set-AzureADUserLicense -ObjectId $User.ObjectId -AssignedLicenses $LicensesToAssign
+			Start-Sleep -s 15
+			Write-Host "Done!" -ForegroundColor Green
 
 
-######################################################################
-#Assign ResourceAccount to Callqueue
-#get application id and call queue id
-Write-Host "Assigning Resource Account to Callqueue" -ForegroundColor Cyan
-$applicationInstanceId = (Get-CsOnlineUser $CC1)[-1].Identity
-$callQueueId = (Get-CsCallQueue -NameFilter $CC2).Identity
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-
-#make the connection
-Write-Host "Creating the connection..." -ForegroundColor Cyan
-New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $callQueueId -ConfigurationType CallQueue
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################*****
+			# assign phone number to the resource account
+			Start-Sleep -s 4
+			Write-Host "Assigning phone number to the resource account..." -ForegroundColor Cyan
+			Start-Sleep -s 15
+			#Set-CsOnlineApplicationInstance -Identity $AT1 -OnpremPhoneNumber $Number1 #"tel:$($Number1)" ###### TEST ######
+			Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1 
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
 
-######################################################################
-#Default Call Flow
-Write-Host "Building the call flow..." -ForegroundColor Cyan
-Start-Sleep -s 4
-$callableEntityId = (Find-CsOnlineApplicationInstance -SearchQuery $CC2) | Select-Object -Property Id
-$CallTarget= New-CsAutoAttendantCallableEntity -Identity $callableEntityId.id -Type ApplicationEndpoint
-$menuOption = New-CsAutoAttendantMenuOption -Action TransferCallToTarget -DtmfResponse Automatic -CallTarget $CallTarget
-Start-Sleep -s 2
-$AAMenu = New-CsAutoAttendantMenu -Name "Default Menu" -MenuOptions @($menuOption) -DirectorySearchMethod None
-Start-Sleep -s 2
-#$WelcomePrompt = New-CsAutoAttendantPrompt -AudioFilePrompt $GreetingAudioFile
-$DefaultCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 Default call flow" -Menu $AAMenu # -Greetings @($WelcomePrompt)
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################
+			# create call queue
+			$UserVarId = Get-CsOnlineApplicationInstance -Identity $AT1 | Select-Object -ExpandProperty ObjectID
+			Start-Sleep -s 4
+			Write-Host "Creating call queue... $CC2" -ForegroundColor Cyan
+			New-CsCallQueue -Name $CC2 -LanguageId "de-DE" -UseDefaultMusicOnHold $true -RoutingMethod Attendant -Users @($UserVarId) -AllowOptOut $true -AgentAlertTime 30 -OverflowThreshold 50 -OverflowAction DisconnectWithBusy -TimeoutThreshold 1200 -TimeoutAction Disconnect
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
+			Start-Sleep -s 10
 
 
-######################################################################
-#After Hours Call Flow
-#TimeRange
-Write-Host "Setting up time range for After hours call flow" -ForegroundColor Cyan
-Start-Sleep -s 4
+			######################################################################
+			#Assign ResourceAccount to Callqueue
+			#get application id and call queue id
+			Write-Host "Assigning Resource Account to Callqueue" -ForegroundColor Cyan
+			$applicationInstanceId = (Get-CsOnlineUser $CC1)[-1].Identity
+			$callQueueId = (Get-CsCallQueue -NameFilter $CC2).Identity
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
-$OT1 =  $(Write-Host "Please enter opening hour in the morning. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "08:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
-$OT2 =  $(Write-Host "Please enter closing hour at noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "12:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
-$OT3 =  $(Write-Host "Please enter opening hour after noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "13:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
-$OT4 =  $(Write-Host "Please enter closing hour in the evening. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "17:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
-write-host "Thank you!" -ForegroundColor Green -BackgroundColor black
-Start-Sleep -s 2
-$trMorning = New-CsOnlineTimeRange -Start $OT1 -End $OT2
-$trAfternoon = New-CsOnlineTimeRange -Start $OT3 -End $OT4
-Start-Sleep -s 2
-Write-Host "After hours time range is set... " -ForegroundColor Green
-Start-Sleep -s 5
-
-######################################################################
-#Business Hours
-Write-Host "Finding and setting time ranges for business hours..." -ForegroundColor Cyan
-Start-Sleep -s 2
-$AfterHoursShedule = New-CsOnlineSchedule -Name "BusinessHours" -WeeklyRecurrentSchedule -MondayHours @($trMorning,$trAfternoon) -TuesdayHours @($trMorning,$trAfternoon) -WednesdayHours @($trMorning,$trAfternoon) -ThursdayHours @($trMorning,$trAfternoon) -FridayHours @($trMorning,$trAfternoon) -Complement
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-
-######################################################################
-#Rechecking if phone number is set
-Start-Sleep -s 3
-Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
-Write-Host "Rechecking if $AT1 got the $Number1 phone number..." -ForegroundColor Yellow -BackgroundColor black
-Start-Sleep -s 3
-if (Get-CsOnlineApplicationInstance -Identity $AT1 | Where-Object {$_.phonenumber -eq $null}) {
-    Start-Sleep -s 2
-    write-host "Phone number was not set!" -ForegroundColor Yellow -BackgroundColor Black
-    Start-Sleep -s 5
-    write-host "Setting up phone number" -ForegroundColor Yellow -BackgroundColor Black
-    Start-Sleep -s 2
-    Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1
-    Start-Sleep -s 2
-}
-else {
-Write-Host "Number OK!" -ForegroundColor Green -BackgroundColor Black
-Start-Sleep -s 2
-}
-Write-Host "Number is set!" -ForegroundColor Green -BackgroundColor Black
-Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
-Start-Sleep -s 4
+			#make the connection
+			Write-Host "Creating the connection..." -ForegroundColor Cyan
+			New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $callQueueId -ConfigurationType CallQueue
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
 
-######################################################################
-#Menu (AfterHoursCall Flow)
-Write-Host "Setting up business- and after hours to Auto attendant: $AT2..." -ForegroundColor Cyan
-Start-Sleep -s 2
-$menuOption = New-CsAutoAttendantMenuOption -Action DisconnectCall -DtmfResponse Automatic
-$afterHoursMenu = New-CsAutoAttendantMenu -Name "After Hours Call Flow" -MenuOptions @($menuOption) -DirectorySearchMethod None
-$afterHoursCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 After hours call flow" -Menu $afterHoursMenu -Greetings @($OOFPrompt)
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-
- 
-######################################################################
-#CallHandlingAssociation
-Write-Host "Configuring Call Handling Association..." -ForegroundColor Cyan
-Start-Sleep -s 2
-$AfterHoursSheduleCallHandlingAssociation = New-CsAutoAttendantCallHandlingAssociation -Type AfterHours -ScheduleId $AfterHoursShedule.Id -CallFlowId $afterHoursCallFlow.Id
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################
+			#Default Call Flow
+			Write-Host "Building the call flow..." -ForegroundColor Cyan
+			Start-Sleep -s 4
+			$callableEntityId = (Find-CsOnlineApplicationInstance -SearchQuery $CC2) | Select-Object -Property Id
+			$CallTarget= New-CsAutoAttendantCallableEntity -Identity $callableEntityId.id -Type ApplicationEndpoint
+			$menuOption = New-CsAutoAttendantMenuOption -Action TransferCallToTarget -DtmfResponse Automatic -CallTarget $CallTarget
+			Start-Sleep -s 2
+			$AAMenu = New-CsAutoAttendantMenu -Name "Default Menu" -MenuOptions @($menuOption) -DirectorySearchMethod None
+			Start-Sleep -s 2
+			#$WelcomePrompt = New-CsAutoAttendantPrompt -AudioFilePrompt $GreetingAudioFile
+			$DefaultCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 Default call flow" -Menu $AAMenu # -Greetings @($WelcomePrompt)
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
 
-<######################################################################
-#TimeZone
-Write-Host "Listing available TimeZones..." -ForegroundColor Cyan
-Start-Sleep -s 2
-Get-CsAutoAttendantSupportedTimeZone
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
+			######################################################################
+			#After Hours Call Flow
+			#TimeRange
+			Write-Host "Setting up time range for After hours call flow" -ForegroundColor Cyan
+			Start-Sleep -s 4
+
+			$OT1 =  $(Write-Host "Please enter opening hour in the morning. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "08:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			$OT2 =  $(Write-Host "Please enter closing hour at noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "12:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			$OT3 =  $(Write-Host "Please enter opening hour after noon. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "13:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			$OT4 =  $(Write-Host "Please enter closing hour in the evening. Example: " -NoNewLine) + $(Write-Host """" -NoNewline) +$(Write-Host "17:00" -ForegroundColor Yellow -NoNewline; Read-Host """")
+			write-host "Thank you!" -ForegroundColor Green -BackgroundColor black
+			Start-Sleep -s 2
+			$trMorning = New-CsOnlineTimeRange -Start $OT1 -End $OT2
+			$trAfternoon = New-CsOnlineTimeRange -Start $OT3 -End $OT4
+			Start-Sleep -s 2
+			Write-Host "After hours time range is set... " -ForegroundColor Green
+			Start-Sleep -s 5
+
+			######################################################################
+			#Business Hours
+			Write-Host "Finding and setting time ranges for business hours..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$AfterHoursShedule = New-CsOnlineSchedule -Name "BusinessHours" -WeeklyRecurrentSchedule -MondayHours @($trMorning,$trAfternoon) -TuesdayHours @($trMorning,$trAfternoon) -WednesdayHours @($trMorning,$trAfternoon) -ThursdayHours @($trMorning,$trAfternoon) -FridayHours @($trMorning,$trAfternoon) -Complement
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
+
+			######################################################################
+			#Rechecking if phone number is set
+			Start-Sleep -s 3
+			Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
+			Write-Host "Rechecking if $AT1 got the $Number1 phone number..." -ForegroundColor Yellow -BackgroundColor black
+			Start-Sleep -s 3
+			if (Get-CsOnlineApplicationInstance -Identity $AT1 | Where-Object {$_.phonenumber -eq $null}) {
+			    Start-Sleep -s 2
+			    write-host "Phone number was not set!" -ForegroundColor Yellow -BackgroundColor Black
+			    Start-Sleep -s 5
+			    write-host "Setting up phone number" -ForegroundColor Yellow -BackgroundColor Black
+			    Start-Sleep -s 2
+			    Set-CsOnlineVoiceApplicationInstance -Identity $AT1 -TelephoneNumber $Number1
+			    Start-Sleep -s 2
+			}
+			else {
+			Write-Host "Number OK!" -ForegroundColor Green -BackgroundColor Black
+			Start-Sleep -s 2
+			}
+			Write-Host "Number is set!" -ForegroundColor Green -BackgroundColor Black
+			Write-host "***************************************************" -ForegroundColor Yellow -BackgroundColor Black
+			Start-Sleep -s 4
 
 
-######################################################################>
-#Auto Attendant
-Write-Host "Setting the W. Europe Standard Time time Zone..." -ForegroundColor Cyan
-Start-Sleep -s 2
-$aaName = $AT2
-$language = "de-DE"
-$TimeZone = "W. Europe Standard Time"
-$CallQueueId = (Get-CsOnlineUser -Identity $CC1).ObjectId
+			######################################################################
+			#Menu (AfterHoursCall Flow)
+			Write-Host "Setting up business- and after hours to Auto attendant: $AT2..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$menuOption = New-CsAutoAttendantMenuOption -Action DisconnectCall -DtmfResponse Automatic
+			$afterHoursMenu = New-CsAutoAttendantMenu -Name "After Hours Call Flow" -MenuOptions @($menuOption) -DirectorySearchMethod None
+			$afterHoursCallFlow = New-CsAutoAttendantCallFlow -Name "$AT2 After hours call flow" -Menu $afterHoursMenu -Greetings @($OOFPrompt)
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
-New-CsAutoAttendant -Name $aaName -LanguageId $language -CallFlows @($afterHoursCallFlow) -TimeZoneId $TimeZone -DefaultCallFlow $DefaultCallFlow -CallHandlingAssociations @($AfterHoursSheduleCallHandlingAssociation)
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-
-
-######################################################################
-#Assign ResourceAccount to AutoAttendant
-#get application id and call queue id
-Write-Host "Assign ResourceAccount to AutoAttendant..." -ForegroundColor Cyan
-Start-Sleep -s 2
-$applicationInstanceId = (Get-CsOnlineUser $AT1)[-1].Identity
-$AutoAttendantID = (Get-CsAutoAttendant -NameFilter $AT2).Identity
-
-New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $AutoAttendantID -ConfigurationType AutoAttendant
-Start-Sleep -s 2
-Write-Host "Done!" -ForegroundColor Green
-Start-Sleep -s 2
-Write-Host "Configuration is Done!" -ForegroundColor black -BackgroundColor Green
+			 
+			######################################################################
+			#CallHandlingAssociation
+			Write-Host "Configuring Call Handling Association..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$AfterHoursSheduleCallHandlingAssociation = New-CsAutoAttendantCallHandlingAssociation -Type AfterHours -ScheduleId $AfterHoursShedule.Id -CallFlowId $afterHoursCallFlow.Id
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
 
 
-######################################################################
-# Show Auto Attendant
-Start-Sleep -s 5
-Write-Host "Showing created Auto Attendant.." -ForegroundColor Magenta
-Start-Sleep -s 2
-Get-CsAutoAttendant
-pause
+			<######################################################################
+			#TimeZone
+			Write-Host "Listing available TimeZones..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			Get-CsAutoAttendantSupportedTimeZone
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
+
+
+			######################################################################>
+			#Auto Attendant
+			Write-Host "Setting the W. Europe Standard Time time Zone..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$aaName = $AT2
+			$language = "de-DE"
+			$TimeZone = "W. Europe Standard Time"
+			$CallQueueId = (Get-CsOnlineUser -Identity $CC1).ObjectId
+
+			New-CsAutoAttendant -Name $aaName -LanguageId $language -CallFlows @($afterHoursCallFlow) -TimeZoneId $TimeZone -DefaultCallFlow $DefaultCallFlow -CallHandlingAssociations @($AfterHoursSheduleCallHandlingAssociation)
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
+
+
+			######################################################################
+			#Assign ResourceAccount to AutoAttendant
+			#get application id and call queue id
+			Write-Host "Assign ResourceAccount to AutoAttendant..." -ForegroundColor Cyan
+			Start-Sleep -s 2
+			$applicationInstanceId = (Get-CsOnlineUser $AT1)[-1].Identity
+			$AutoAttendantID = (Get-CsAutoAttendant -NameFilter $AT2).Identity
+
+			New-CsOnlineApplicationInstanceAssociation -Identities @($applicationInstanceId) -ConfigurationId $AutoAttendantID -ConfigurationType AutoAttendant
+			Start-Sleep -s 2
+			Write-Host "Done!" -ForegroundColor Green
+			Start-Sleep -s 2
+			Write-Host "Configuration is Done!" -ForegroundColor black -BackgroundColor Green
+
+
+			######################################################################
+			# Show Auto Attendant
+			Start-Sleep -s 5
+			Write-Host "Showing created Auto Attendant.." -ForegroundColor Magenta
+			Start-Sleep -s 2
+			Get-CsAutoAttendant
+			pause
          } '3' {
              
 
-function Show-Menu
-{
-    param (
-        [string]$Title = 'Phone Number management'
-    )
-    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "================ $Title ================                       " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "1: Press '1' for List all telephone numbers that you have for your organization." -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "2: Press '2' for List all of the telephone numbers that are assigned to users.  " -ForegroundColor Magenta -BackgroundColor black
-    #Write-Host "3: Press '3' for this option." -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "Q: Press 'Q' to quit.                                                           " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
-    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
-}
+			function Show-Menu
+			{
+			    param (
+			        [string]$Title = 'Phone Number management'
+			    )
+			    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "================ $Title ================                       " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "1: Press '1' for List all telephone numbers that you have for your organization." -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "2: Press '2' for List all of the telephone numbers that are assigned to users.  " -ForegroundColor Magenta -BackgroundColor black
+			    #Write-Host "3: Press '3' for this option." -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "Q: Press 'Q' to quit.                                                           " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
+			    Write-Host "                                                                                " -ForegroundColor Magenta -BackgroundColor black
+			}
 
-Show-Menu –Title 'Phone Number management'
- $selection = Read-Host "Please make a selection"
- switch ($selection)
- {
-     '1'   {
-            $selection1 =  Read-Host "Would you like to see the result in a grid view? [Y] / [N]" 
-            switch ($selection1)
-                { 'Y' {
-                        Get-CsOnlineTelephoneNumber | select Id,ActivationState | Out-GridView
-                } 'N' {
-                        Get-CsOnlineTelephoneNumber | ft Id,ActivationState
-                }
-     
-            }
+			Show-Menu –Title 'Phone Number management'
+			 $selection = Read-Host "Please make a selection"
+			 switch ($selection)
+			 {
+			     '1'   {
+			            $selection1 =  Read-Host "Would you like to see the result in a grid view? [Y] / [N]" 
+			            switch ($selection1)
+			                { 'Y' {
+			                        Get-CsOnlineTelephoneNumber | select Id,ActivationState | Out-GridView
+			                } 'N' {
+			                        Get-CsOnlineTelephoneNumber | ft Id,ActivationState
+			                }
+			     
+			            }
 
-     } '2' {
-              $selection2 =  Read-Host "Would you like to see the result in a grid view? [Y] / [N]" 
-              switch ($selection2)
-                { 'Y' {
-                        Get-CsOnlineUser | Where-Object  { $_.LineURI -notlike $null } | select DisplayName,UserPrincipalName,LineURI | Out-GridView
-                } 'N' {
-                        Get-CsOnlineUser | Where-Object  { $_.LineURI -notlike $null } | ft DisplayName,UserPrincipalName,LineURI
-            }
-     
-     }
-     } '3' {
-         'You chose option #3'
-     } 'q' {
-         return
-     }
- }
+			     } '2' {
+			              $selection2 =  Read-Host "Would you like to see the result in a grid view? [Y] / [N]" 
+			              switch ($selection2)
+			                { 'Y' {
+			                        Get-CsOnlineUser | Where-Object  { $_.LineURI -notlike $null } | select DisplayName,UserPrincipalName,LineURI | Out-GridView
+			                } 'N' {
+			                        Get-CsOnlineUser | Where-Object  { $_.LineURI -notlike $null } | ft DisplayName,UserPrincipalName,LineURI
+			            }
+			     
+			     }
+			     } '3' {
+			         'You chose option #3'
+			     } 'q' {
+			         return
+			     }
+			 }
 
 
- return
+			 return
 
          }
      }
