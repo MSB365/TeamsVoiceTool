@@ -6,7 +6,7 @@
        Created by:         Drago Petrovic
        Organization:       MSB365.blog
        Filename:           TeamsVoice-AdminTool.ps1
-       Current version:    V1.10     
+       Current version:    V1.20     
 
        Find us on:
              * Website:         https://www.msb365.blog
@@ -44,7 +44,8 @@
        ===========================================================================
        .CHANGE LOG
              V1.00, 2022/04/07 - DrPe - Initial version
-             V1.10, 2021/09/13 - DrPe - Added the assing Phonenumber Module
+             V1.10, 2022/04/13 - DrPe - Added the assing Phonenumber Module
+             V1.20, 2022/05/11 - DrPe - Replaced the Set-CsOnlineVoiceUser with the new command Set-CsPhoneNumberAssignment on Line 369
              
 			 
 
@@ -58,7 +59,7 @@
 
 #>
 #endregion
-
+##############################################################################################################
 [cmdletbinding()]
 param(
 [switch]$accepteula,
@@ -268,7 +269,7 @@ switch ($selection3)
                     Write-Host "Microsoft Teams Module Already Installed" -ForegroundColor Green
                     start-sleep -s 2
                     Write-Host "Checking for Module update..." -ForegroundColor cyan
-                    Update-Module MicrosoftTeams
+                    #Update-Module MicrosoftTeams
                     write-host " - Please enter the credentials..." -ForegroundColor Yellow 
                 } 
             else {
@@ -323,7 +324,7 @@ do
 			Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
 			Write-Host "NOTE!" -ForegroundColor Yellow -BackgroundColor Black
 			Write-Host "The following information are needed in the CSV file:" -ForegroundColor White -BackgroundColor black
-			Write-Host 'UserPrincipalName,"DisplayName","TelephoneNumber"' -ForegroundColor Gray -BackgroundColor Black
+			Write-Host '"UserPrincipalName","DisplayName","TelephoneNumber","CallingPolicy"' -ForegroundColor Gray -BackgroundColor Black
 			Write-Host "*****************************************************" -ForegroundColor Yellow -BackgroundColor Black
 			Start-Sleep -s 6
 			$File = New-Object System.Windows.Forms.OpenFileDialog
@@ -365,9 +366,13 @@ do
 			{
 				try
 				{
-					Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid -ErrorAction Stop ###
+					#Set-CsOnlineVoiceUser -Identity $user.UserPrincipalName -TelephoneNumber $user.TelephoneNumber -LocationID $Lid -ErrorAction Stop ###
+                    Set-CsPhoneNumberAssignment -Identity $user.UserPrincipalName  -PhoneNumber $user.TelephoneNumber -PhoneNumberType DirectRouting 
 					Write-Host "Phone numbers for the users $($user.DisplayName) set!" -ForegroundColor Green
-					Start-Sleep -s 2
+					Start-Sleep -s 1
+                    Set-CsPhoneNumberAssignment -Identity $user.UserPrincipalName -EnterpriseVoiceEnabled $true
+                    Write-Host "Enterprise Voice for the users $($user.DisplayName) enabled." -ForegroundColor Green
+					Start-Sleep -s 1
 				}
 				catch
 				{
@@ -775,3 +780,8 @@ do
      
  }
  until ($selection -eq 'q')
+
+
+
+
+
