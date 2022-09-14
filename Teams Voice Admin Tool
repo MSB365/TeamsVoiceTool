@@ -748,9 +748,9 @@ do
 			            $selection1 =  Read-Host "Would you like to see the result in a grid view? [Y] / [N]" 
 			            switch ($selection1)
 			                { 'Y' {
-			                        Get-CsOnlineTelephoneNumber | select Id,ActivationState | Out-GridView
+			                        Get-CsPhoneNumberAssignment | select Telephonenumber,numbertype,city,pstnassignmentstatus,ActivationState | Out-GridView
 			                } 'N' {
-			                        Get-CsOnlineTelephoneNumber | ft Id,ActivationState
+			                        Get-CsPhoneNumberAssignment | ft Telephonenumber,numbertype,city,pstnassignmentstatus,ActivationState
 			                }
 			     
 			            }
